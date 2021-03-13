@@ -76,19 +76,19 @@ class Hand(Cards):
         if self.five()[0] == True:
             self.rank['rank'] = 9
             self.rank['value'] = self.five()[1]
-            self.rank['highCard'] = self.rank['value']
+            self.rank['highCard'] = self.five()[2]
         elif self.straightFlush()[0] == True:
             self.rank['rank'] = 8
             self.rank['value'] = self.straightFlush()[1]
-            self.rank['highCard'] = self.rank['value']
+            self.rank['highCard'] = self.straightFlush()[2]
         elif self.four()[0] == True:
             self.rank['rank'] = 7
             self.rank['value'] = self.four()[1]
             self.rank['highCard'] = self.four()[2]
         elif self.fullHouse()[0] == True:
             self.rank['rank'] = 6
-            self.rank['value'] = max(self.fullHouse()[1])
-            self.rank['highCard'] = min(self.fullHouse()[1])
+            self.rank['value'] = self.fullHouse()[1]
+            self.rank['highCard'] = self.fullHouse()[2]
         elif self.flush()[0] == True:
             self.rank['rank'] = 5
             self.rank['value'] = self.flush()[1]
@@ -101,18 +101,18 @@ class Hand(Cards):
             self.rank['rank'] = 3
             self.rank['value'] = self.three()[1]
             self.rank['highCard'] = self.three()[2]
-        elif self.twoPair()[0][0] == True:
+        elif self.twoPair()[0] == True:
             self.rank['rank'] = 2
-            self.rank['value'] = max(self.twoPair()[0][1])
-            self.rank['highCard'] = self.twoPair()[1]
-        elif self.onePair()[0][0] == True:
+            self.rank['value'] = max(self.twoPair()[1])
+            self.rank['highCard'] = self.twoPair()[2]
+        elif self.onePair()[0] == True:
             self.rank['rank'] = 1
-            self.rank['value'] = self.onePair()[0][1]
+            self.rank['value'] = self.onePair()[1]
             self.rank['highCard'] = self.onePair()[2]
         else:
             self.rank['rank'] = 0
             self.rank['value'] = self.highCard()[1]
-            self.rank['highCard'] = self.rank['value']
+            self.rank['highCard'] = self.highCard()[2]
         return self.rank
 
     def sameColors(self, n):
@@ -148,114 +148,111 @@ class Hand(Cards):
         return sameOnes, sameCards
         
     def highCard(self):
-        highCard, highCardValue, highCardCard = True, -1, ''
+        highCard, highCardValue, highCardList = True, -1, []
         for card in self.cards:
-            if card.value > highCardValue:
-                highCardValue = card.value
-                highCardCard = card
-        return highCard, highCardValue, highCardCard
+            highCardList.append(card.value)
+        highCardList.sort(reverse=True)
+        highCardValue = highCardList[0] #max(highCardList)
+        return highCard, highCardValue, highCardList
 
     def onePair(self):
-        onePair, onePairValue, onePairCards, highCardValue = False, -1, [], -1
+        onePair, onePairValue, onePairCards, highCardList = False, -1, [], []
         same2Ones = self.sameValues(2)
         same3Ones = self.sameValues(3)
         if len(same2Ones[0]) == 1 and len(same3Ones[0]) == 0:
-            onePair, onePairValue, onePairCards, highCardValue = True, same2Ones[0], same2Ones[1], -1
-        return onePair, onePairValue, onePairCards, highCardValue
+            onePair, onePairValue, onePairCards, highCardList = True, same2Ones[0], same2Ones[1], []
+            for card in self.cards:
+                for onePairCard in onePairCards[0]:
+                    if card.value != onePairCard.value and card.value not in highCardList:
+                        highCardList.append(card.value)
+            highCardList.sort(reverse=True)
+        return onePair, onePairValue, highCardList, onePairCards
 
     def twoPair(self):
-        twoPair, twoPairValue, twoPairCards, highCardValue = False, [-1, -1], [], -1
+        twoPair, twoPairValue, twoPairCards, highCardList = False, [-1, -1], [], -1
         same2Ones = self.sameValues(2)
         same3Ones = self.sameValues(3)
         if len(same2Ones[0]) == 2 and len(same3Ones[0]) == 0:
-            twoPair, twoPairValue, twoPairCards, highCardValue = True, same2Ones[0], [], -1
-        return twoPair, twoPairValue, twoPairCards, highCardValue
+            twoPair, twoPairValue, twoPairCards = True, same2Ones[0], same2Ones[1]
+            highCardList = [min(same2Ones[0])]
+            for card in self.cards:
+                for twoPairCard in twoPairCards[0]:
+                    if card.value != twoPairCard.value and card.value not in highCardList:
+                        highCardList.append(card.value)
+            highCardList.sort(reverse=True)
+        return twoPair, twoPairValue, highCardList, twoPairCards
 
     def three(self):
-        three, threeValue, threeCards, highCardValue = False, -1, [], -1
+        three, threeValue, threeCards, highCardList = False, -1, [], []
         same2Ones = self.sameValues(2)
         same3Ones = self.sameValues(3)
         if len(same3Ones[0]) == 1 and len(same2Ones[0]) == 0:
-            three, threeValue, threeCards, highCardValue = True, same3Ones[0][0], same3Ones[1], -1
-        return three, threeValue, threeCards, highCardValue
+            three, threeValue, threeCards = True, same3Ones[0][0], same3Ones[1]
+            for card in self.cards:
+                for threeCard in threeCards[0]:
+                    if card.value != threeCard.value and card.value not in highCardList:
+                        highCardList.append(card.value)
+            highCardList.sort(reverse=True)
+        return three, threeValue, highCardList, threeCards
 
     def straight(self):
-        straight, straightValue, highCardValue = True, -1, -1
+        straight, straightValue, highCardList = True, -1, []
         values = [card.value for card in self.cards]
         values.sort()
         straightValue = values[4]
         i = 0
         while i < 4:
             if values[i+1] - values[i] != 1:
-                straight, straightValue, highCardValue = False, -1, -1
+                straight, straightValue, highCardList = False, -1, values
                 break
             i += 1
-        highCardValue = self.highCard()[1]
-        return straight, straightValue, highCardValue
+        return straight, straightValue, highCardList
 
     def flush(self):
-        flush, flushColor, highCardValue = False, '', -1
+        flush, flushColor, highCardList = False, '', []
         sameness = self.sameColors(5)
         flush = True if sameness[0] != [] else False
         flushColor = Card.colors[sameness[0][0]] if flush == True else ''
-        highCardValue = self.highCard()[1]
-        return flush, flushColor, highCardValue
-
-##eddig át vannak nézve a kombinációk, four és straightFlush is
-##ranking még nem
+        highCardList = [card.value for card in self.cards]
+        highCardList.sort()
+        return flush, flushColor, highCardList
 
     def fullHouse(self):
-        fullHouse, fullHouseValue, highCardValue = False, [-1, -1], -1
-        N = 2
-        cardsToTest = self.cards
-        combination = combinations(cardsToTest, N)
-        for comb in combination:
-            _cardsToTest = Hand(list(cardsToTest))
-            _cards = Hand(list(comb))
-            onePairNess = _cards.onePair()
-            if onePairNess[0][0] == True:
-##                fullHouseValue[0] = Card.values.index(onePairNess[0][1])
-                fullHouseValue[0] = onePairNess[0][1]
-                _cardsToTest.remove(onePairNess[1][0])
-                _cardsToTest.remove(onePairNess[1][1])
-                threeNess = _cardsToTest.three()
-                if threeNess[0] == True:
-                    fullHouse = True
-                    fullHouseValue[1] = threeNess[1]
-                    highCardValue = fullHouseValue[1]
-                    return fullHouse, fullHouseValue, highCardValue
-                else:
-                    fullHouse, fullHouseValue, highCardValue = False, [-1, -1], -1
-        return fullHouse, fullHouseValue, highCardValue
+        fullHouse, fullHouseValue, highCardList = False, -1, []
+        same2Ones = self.sameValues(2)
+        same3Ones = self.sameValues(3)
+        if len(same2Ones[0]) == 1 and len(same3Ones[0]) == 1:
+            if same2Ones[0][0] != same3Ones[0][0]:
+                fullHouse = True
+                fullHouseValue = same3Ones[0][0]
+                highCardList = [same2Ones[0][0]]
+        return fullHouse, fullHouseValue, highCardList
 
     def four(self):
-        '''
-        without joker cards the maximum number of same values is 4
-        so no other check is required
-        '''
         four, fourValue, highCardValue = False, -1, -1
         sameness = self.sameValues(4)
         if sameness[0] != []:
             four = True
             fourValue = sameness[0][0]
             for card in self.cards:
-                if card not in sameness[1][0]:
-                    highCardValue = card.value
+                if card.value != fourValue:
+                    highCardValue = [card.value]
         return four, fourValue, highCardValue
 
     def straightFlush(self):
-        straightFlush, highCard = False, -1
+        straightFlush, highCard, highCardList = False, -1, []
         if self.straight()[0] == True and self.flush()[0] == True:
             straightFlush = True
-            highCard = self.highCard()[1]
-        return straightFlush, highCard
+            highCardList = self.highCard()[2]
+            highCard = highCardList[0]
+        return straightFlush, highCard, highCardList
 
     def five(self):
         five = False
         sameness = self.sameValues(5)
         if sameness[0] == 5:
             five = True
-        return five, self.highCard()[1]
+        return five, self.highCard()[1], self.highCard()[2]
 
 class Game(object):
     def __init__(self):
@@ -281,35 +278,45 @@ class Game(object):
     def play(self):
         self.rankA = self.handA.ranking()
         self.rankB = self.handB.ranking()
-        rankA, rankB = self.rankA['rank'], self.rankB['rank']
-        #print('-----------')
-        #print(rankA, rankB)
-        self.winner = 'A' if rankA > rankB else ('B' if rankA < rankB else 'draw')
-        if self.winner == 'draw':
-            rankA, rankB = self.rankA['value'], self.rankB['value']
-            #print(rankA, rankB)
-            self.winner = 'A' if rankA > rankB else ('B' if rankA < rankB else 'draw')
-            if self.winner == 'draw':
-                rankA, rankB = self.rankA['highCard'], self.rankB['highCard']
-                #print(rankA, rankB)
-                self.winner = 'A' if rankA > rankB else ('B' if rankA < rankB else 'draw')
+        
+        self.winner = 'draw'
+        if self.rankA['rank'] == self.rankB['rank']:
+            if self.rankA['value'] == self.rankB['value']:
+                i = 0
+                while i < len(self.rankA['highCard']): #while i < 4
+                    if self.rankA['highCard'][i] > self.rankB['highCard'][i]:
+                        self.winner = 'A'
+                        break
+                    elif self.rankA['highCard'][i] < self.rankB['highCard'][i]:
+                        self.winner = 'B'
+                        break
+                    else:
+                        i += 1
+            else:
+                self.winner = 'A' if self.rankA['value'] > self.rankB['value'] else ('B' if self.rankA['value'] < self.rankB['value'] else 'draw')
+        else:
+            self.winner = 'A' if self.rankA['rank'] > self.rankB['rank'] else ('B' if self.rankA['rank'] < self.rankB['rank'] else 'draw')
 
-##winners = {'A' : 0, 'B' : 0, 'draw' : 0}
-##n = 1000
-##start = time.time()
-##for i in range(n):
-##    game = Game()
-##    game.deal()
-####    print('----------')
-####    game.print()
-##    game.play()
-##    #print(game.winner)
-##    winners[game.winner] += 1
-##print(winners)
-##end = time.time()
-##deltaSum = end - start
-##delta = deltaSum / n
-##print(delta)
+
+winners = {'A' : 0, 'B' : 0, 'draw' : 0}
+n = 100000
+start = time.time()
+for i in range(n):
+    game = Game()
+    game.deal()
+    game.play()
+##    print('--------')
+##    game.print()
+##    print(game.winner)
+    if game.winner == 'draw':
+        print('--------')
+        game.print()
+    winners[game.winner] += 1
+print(winners)
+end = time.time()
+deltaSum = end - start
+delta = deltaSum / n
+print(delta)
 
 ##card = Card('pikk', 'A')
 ##card.print()
@@ -328,13 +335,13 @@ class Game(object):
 ##hand = Hand([Card('káró', 'A'), Card('káró', 3), Card('káró', 4), Card('káró', 'K'), Card('káró', 6)]) #flush
 ##hand = Hand([Card('kőr', 2), Card('káró', 2), Card('treff', 4), Card('káró', 4), Card('pikk', 4)]) #full house
 ##hand = Hand([Card('kőr', 2), Card('káró', 2), Card('treff', 2), Card('káró', 4), Card('pikk', 2)]) #four
-hand = Hand([Card('káró', 2), Card('káró', 3), Card('káró', 4), Card('káró', 5), Card('káró', 6)]) #straightFlush
+##hand = Hand([Card('káró', 2), Card('káró', 3), Card('káró', 4), Card('káró', 5), Card('káró', 6)]) #straightFlush
 ##hand = Hand([Card('kőr', 2), Card('káró', 2), Card('treff', 2), Card('káró', 4), Card('kőr', 2)]) #five
-hand.print()
+##hand.print()
 ##print('1 of the same colors', hand.sameColors(1))
 ##print('2 of the same colors', hand.sameColors(2))
-print('5 of the same colors', hand.sameColors(5))
-print('1 of the same values', hand.sameValues(1))
+##print('5 of the same colors', hand.sameColors(5))
+##print('1 of the same values', hand.sameValues(1))
 ##print('2 of the same values', hand.sameValues(2))
 ##print('3 of the same values', hand.sameValues(3))
 ##print('5 of the same values', hand.sameValues(5))
@@ -346,8 +353,8 @@ print('1 of the same values', hand.sameValues(1))
 ##print('Straight?', hand.straight())
 ##print('Flush?', hand.flush())
 ##print('Full house?', hand.fullHouse())
-print('Four?', hand.four())
-print('Straight flush?', hand.straightFlush())
+##print('Four?', hand.four())
+##print('Straight flush?', hand.straightFlush())
 ##print('Five?', hand.five())
 
 
@@ -365,6 +372,8 @@ print('Straight flush?', hand.straightFlush())
 ##handB = Hand(handb)
 ####handA = Hand([Card('kőr', 2), Card('káró', 2), Card('treff', 4), Card('káró', 4), Card('pikk', 4)]) #full house, rank 6
 ####handB = Hand([Card('kőr', 2), Card('káró', 2), Card('treff', 3), Card('káró', 3), Card('pikk', 4)]) #two pair, rank 2
+##handA = Hand([Card('treff', 5), Card('kőr', 2), Card('káró', 3), Card('kőr', 'A'), Card('treff', 3)])
+##handB = Hand([Card('treff', 9), Card('pikk', 10), Card('kőr', 3), Card('treff', 'J'), Card('pikk', 3)])
 ##print('Hand A:')
 ##handA.print()
 ##print('\nHand B:')
@@ -381,7 +390,7 @@ print('Straight flush?', hand.straightFlush())
 ##methods = [hand.highCard, hand.onePair, hand.twoPair, hand.three, hand.straight, hand.flush, hand.fullHouse, hand.four, hand.straightFlush, hand.five, ]
 ##n = 10000
 ##for method in methods:
-##    print(method)
+##    #print(method)
 ##    start = time.time()
 ##    try:
 ##        for i in range(n):
