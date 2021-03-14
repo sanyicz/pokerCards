@@ -255,8 +255,12 @@ class Hand(Cards):
         return five, self.highCard()[1], self.highCard()[2]
 
 class Game(object):
-    def __init__(self):
-        self.deck = Deck()
+    def __init__(self, hands = []):
+        if hands == []:
+            self.deck = Deck()
+        else:
+            self.handA = hands[0]
+            self.handB = hands[1]
 
     def print(self):
         self.handA.print()
